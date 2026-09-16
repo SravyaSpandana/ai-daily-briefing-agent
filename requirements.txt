@@ -1,6 +1,7 @@
-google-adk
-mcp
-pydantic
+google-adk==2.9.1
+mcp==2.2.0
+pydantic>=2.0
 python-dotenv
+requests
+yfinance
 streamlit
-httpx
