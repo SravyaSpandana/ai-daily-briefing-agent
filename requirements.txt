@@ -1,0 +1,6 @@
+google-adk
+mcp
+pydantic
+python-dotenv
+streamlit
+httpx
