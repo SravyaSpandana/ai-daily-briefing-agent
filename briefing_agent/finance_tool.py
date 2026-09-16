@@ -1,4 +1,8 @@
+import json
+
 import httpx
+
+from briefing_agent.models import FinanceResponse
 
 
 def get_finance(symbol: str) -> str:
@@ -9,11 +13,14 @@ def get_finance(symbol: str) -> str:
         symbol: Stock ticker symbol, such as AAPL, MSFT, or JPM.
 
     Returns:
-        A formatted market summary.
+        A JSON string containing recent market information.
     """
 
     if not symbol or not symbol.strip():
-        return "Please provide a stock symbol."
+        return json.dumps({
+            "symbol": symbol,
+            "error": "Please provide a stock symbol.",
+        })
 
     symbol = symbol.strip().upper()
 
@@ -37,7 +44,10 @@ def get_finance(symbol: str) -> str:
         result = data["chart"]["result"]
 
         if not result:
-            return f"No market data found for symbol: {symbol}"
+            return json.dumps({
+                "symbol": symbol,
+                "error": f"No market data found for symbol: {symbol}",
+            })
 
         quote_data = result[0]["indicators"]["quote"][0]
         timestamps = result[0].get("timestamp", [])
@@ -49,11 +59,17 @@ def get_finance(symbol: str) -> str:
         volumes = quote_data.get("volume", [])
 
         valid_closes = [
-            value for value in closes if value is not None
+            value for value in closes
+            if value is not None
         ]
 
         if not valid_closes:
-            return f"No closing price data found for symbol: {symbol}"
+            return json.dumps({
+                "symbol": symbol,
+                "error": (
+                    f"No closing price data found for symbol: {symbol}"
+                ),
+            })
 
         latest_close = valid_closes[-1]
 
@@ -63,7 +79,7 @@ def get_finance(symbol: str) -> str:
                 for value in reversed(opens)
                 if value is not None
             ),
-            "Unavailable",
+            None,
         )
 
         latest_high = next(
@@ -72,7 +88,7 @@ def get_finance(symbol: str) -> str:
                 for value in reversed(highs)
                 if value is not None
             ),
-            "Unavailable",
+            None,
         )
 
         latest_low = next(
@@ -81,7 +97,7 @@ def get_finance(symbol: str) -> str:
                 for value in reversed(lows)
                 if value is not None
             ),
-            "Unavailable",
+            None,
         )
 
         latest_volume = next(
@@ -90,7 +106,7 @@ def get_finance(symbol: str) -> str:
                 for value in reversed(volumes)
                 if value is not None
             ),
-            "Unavailable",
+            None,
         )
 
         previous_close = (
@@ -102,29 +118,62 @@ def get_finance(symbol: str) -> str:
         if previous_close is not None:
             change = latest_close - previous_close
             change_percent = (change / previous_close) * 100
-            change_text = (
-                f"{change:+.2f} "
-                f"({change_percent:+.2f}%)"
-            )
         else:
-            change_text = "Unavailable"
+            change = None
+            change_percent = None
 
-        return (
-            f"Recent market data for {symbol}:\n"
-            f"- Latest close: {latest_close:.2f}\n"
-            f"- Change from previous close: {change_text}\n"
-            f"- Open: {latest_open}\n"
-            f"- Day high: {latest_high}\n"
-            f"- Day low: {latest_low}\n"
-            f"- Volume: {latest_volume}\n"
-            f"- Data points retrieved: {len(timestamps)}"
+        finance_result = FinanceResponse(
+            symbol=symbol,
+            company_name=None,
+            current_price=float(latest_close),
+            previous_close=(
+                float(previous_close)
+                if previous_close is not None
+                else None
+            ),
+            change=(
+                float(change)
+                if change is not None
+                else None
+            ),
+            change_percent=(
+                float(change_percent)
+                if change_percent is not None
+                else None
+            ),
         )
 
+        result_json = json.loads(
+            finance_result.model_dump_json()
+        )
+
+        # Include additional market information while preserving
+        # the fields defined in the Pydantic model.
+        result_json["open"] = latest_open
+        result_json["day_high"] = latest_high
+        result_json["day_low"] = latest_low
+        result_json["volume"] = latest_volume
+        result_json["data_points_retrieved"] = len(timestamps)
+
+        return json.dumps(result_json)
+
     except httpx.HTTPError as exc:
-        return f"Finance service request failed: {exc}"
+        return json.dumps({
+            "symbol": symbol,
+            "error": f"Finance service request failed: {str(exc)}",
+        })
 
     except (KeyError, IndexError, ValueError, TypeError):
-        return "Unable to read the finance service response."
+        return json.dumps({
+            "symbol": symbol,
+            "error": "Unable to read the finance service response.",
+        })
 
     except Exception as exc:
-        return f"Unexpected error while retrieving finance data: {exc}"
+        return json.dumps({
+            "symbol": symbol,
+            "error": (
+                "Unexpected error while retrieving finance data: "
+                f"{str(exc)}"
+            ),
+        })

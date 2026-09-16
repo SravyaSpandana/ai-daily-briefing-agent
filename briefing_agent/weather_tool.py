@@ -1,4 +1,8 @@
+import json
+
 import httpx
+
+from briefing_agent.models import WeatherResponse
 
 
 def get_weather(location: str) -> str:
@@ -9,13 +13,17 @@ def get_weather(location: str) -> str:
         location: City or location name.
 
     Returns:
-        A formatted weather summary.
+        A JSON string containing current weather information.
     """
 
     if not location or not location.strip():
-        return "Please provide a location."
+        return json.dumps({
+            "location": location,
+            "error": "Please provide a location.",
+        })
 
-    encoded_location = location.strip().replace(" ", "+")
+    location = location.strip()
+    encoded_location = location.replace(" ", "+")
 
     url = f"https://wttr.in/{encoded_location}?format=j1"
 
@@ -33,26 +41,60 @@ def get_weather(location: str) -> str:
 
         current = data["current_condition"][0]
 
-        temperature = current.get("temp_C", "Unavailable")
-        feels_like = current.get("FeelsLikeC", "Unavailable")
-        humidity = current.get("humidity", "Unavailable")
-        wind_speed = current.get("windspeedKmph", "Unavailable")
-        description = current["weatherDesc"][0]["value"]
+        temperature = current.get("temp_C")
+        feels_like = current.get("FeelsLikeC")
+        humidity = current.get("humidity")
+        wind_speed = current.get("windspeedKmph")
 
-        return (
-            f"Current weather for {location}:\n"
-            f"- Condition: {description}\n"
-            f"- Temperature: {temperature}°C\n"
-            f"- Feels like: {feels_like}°C\n"
-            f"- Humidity: {humidity}%\n"
-            f"- Wind speed: {wind_speed} km/h"
+        weather_description = current.get("weatherDesc", [{}])[0]
+        description = weather_description.get(
+            "value",
+            "Condition unavailable",
         )
 
-    except httpx.HTTPError as exc:
-        return f"Weather service request failed: {exc}"
+        result = WeatherResponse(
+            location=location,
+            temperature=(
+                f"{temperature}°C"
+                if temperature is not None
+                else "Unavailable"
+            ),
+            condition=description,
+            humidity=(
+                f"{humidity}%"
+                if humidity is not None
+                else "Unavailable"
+            ),
+            wind=(
+                f"{wind_speed} km/h"
+                if wind_speed is not None
+                else "Unavailable"
+            ),
+            forecast=(
+                f"Feels like {feels_like}°C"
+                if feels_like is not None
+                else None
+            ),
+        )
 
-    except (KeyError, IndexError, ValueError):
-        return "Unable to read the weather service response."
+        return result.model_dump_json()
+
+    except httpx.HTTPError as exc:
+        return json.dumps({
+            "location": location,
+            "error": f"Weather service request failed: {str(exc)}",
+        })
+
+    except (KeyError, IndexError, ValueError, TypeError):
+        return json.dumps({
+            "location": location,
+            "error": "Unable to read the weather service response.",
+        })
 
     except Exception as exc:
-        return f"Unexpected error while retrieving weather: {exc}"
+        return json.dumps({
+            "location": location,
+            "error": (
+                f"Unexpected error while retrieving weather: {str(exc)}"
+            ),
+        })x

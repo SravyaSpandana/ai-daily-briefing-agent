@@ -1,7 +1,10 @@
 from urllib.parse import quote_plus
 import xml.etree.ElementTree as ET
+import json
 
 import httpx
+
+from briefing_agent.models import NewsArticle, NewsResponse
 
 
 def get_news(topic: str) -> str:
@@ -12,13 +15,18 @@ def get_news(topic: str) -> str:
         topic: The topic to search for.
 
     Returns:
-        A formatted string containing recent news headlines.
+        A JSON string containing recent news headlines.
     """
 
     if not topic or not topic.strip():
-        return "Please provide a topic to search for news."
+        return json.dumps({
+            "topic": topic,
+            "articles": [],
+            "error": "Please provide a topic to search for news.",
+        })
 
-    encoded_topic = quote_plus(topic.strip())
+    topic = topic.strip()
+    encoded_topic = quote_plus(topic)
 
     url = (
         f"https://news.google.com/rss/search?"
@@ -40,35 +48,59 @@ def get_news(topic: str) -> str:
         news_items = root.findall("./channel/item")
 
         if not news_items:
-            return f"No recent news found for the topic: {topic}"
+            result = NewsResponse(
+                topic=topic,
+                articles=[],
+            )
 
-        results = []
+            return result.model_dump_json()
 
-        for index, item in enumerate(news_items[:8], start=1):
+        articles = []
+
+        for item in news_items[:8]:
             title = item.findtext("title") or "Title unavailable"
             published_date = (
-                item.findtext("pubDate") or "Publication date unavailable"
+                item.findtext("pubDate")
+                or "Publication date unavailable"
             )
             source = item.findtext("source") or "Source unavailable"
             link = item.findtext("link") or "Link unavailable"
 
-            results.append(
-                f"{index}. {title}\n"
-                f"   Source: {source}\n"
-                f"   Published: {published_date}\n"
-                f"   Link: {link}"
+            article = NewsArticle(
+                title=title,
+                link=link,
+                published=published_date,
+                source=source,
             )
 
-        return (
-            f"Recent news for '{topic}':\n\n"
-            + "\n\n".join(results)
+            articles.append(article)
+
+        result = NewsResponse(
+            topic=topic,
+            articles=articles,
         )
 
+        return result.model_dump_json()
+
     except httpx.HTTPError as exc:
-        return f"News service request failed: {exc}"
+        return json.dumps({
+            "topic": topic,
+            "articles": [],
+            "error": f"News service request failed: {str(exc)}",
+        })
 
     except ET.ParseError:
-        return "Unable to read the news service response."
+        return json.dumps({
+            "topic": topic,
+            "articles": [],
+            "error": "Unable to read the news service response.",
+        })
 
     except Exception as exc:
-        return f"Unexpected error while retrieving news: {exc}"
+        return json.dumps({
+            "topic": topic,
+            "articles": [],
+            "error": (
+                f"Unexpected error while retrieving news: {str(exc)}"
+            ),
+        })
