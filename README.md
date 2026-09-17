@@ -76,7 +76,33 @@ Instead of relying only on the model's existing knowledge, the agent can invoke 
 ```
 
 ---
+## Architecture
 
+flowchart TD
+    U[User] --> S[Streamlit UI]
+    S --> A[Google ADK Root Agent]
+    A --> M[MCP Toolset]
+    M --> MCP[MCP Server]
+
+    MCP --> N[News Tool]
+    MCP --> W[Weather Tool]
+    MCP --> F[Finance Tool]
+
+    N --> NR[Google News RSS]
+    W --> WR[wttr.in API]
+    F --> FR[Yahoo Finance API]
+
+    N --> P1[NewsResponse]
+    W --> P2[WeatherResponse]
+    F --> P3[FinanceResponse]
+
+    P1 --> A
+    P2 --> A
+    P3 --> A
+
+    A --> R[Structured Daily Briefing]
+    R --> S
+    
 ## Technology Stack
 
 - Python
