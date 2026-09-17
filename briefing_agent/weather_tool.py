@@ -97,4 +97,4 @@ def get_weather(location: str) -> str:
             "error": (
                 f"Unexpected error while retrieving weather: {str(exc)}"
             ),
-        })x
+        })
