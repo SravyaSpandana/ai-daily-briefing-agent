@@ -1,122 +1,77 @@
+
 # AI Daily Briefing Agent
 
-An agentic AI application that generates concise daily briefings using Google Agent Development Kit, Gemini, MCP tools, and Streamlit.
+An AI-powered daily briefing application that collects information from multiple external services and generates a concise, structured briefing for a user-provided topic.
 
-The application can retrieve current news, weather information, and recent financial market data, then use Gemini to organize the results into a structured briefing.
+The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context Protocol (MCP)**, tool integration, Pydantic data validation, logging, testing, Streamlit, and Docker containerization.
 
 ---
 
-## Overview
+## Features
 
-The AI Daily Briefing Agent is designed to demonstrate how an LLM can be combined with external tools and MCP to build a practical agentic AI application.
-
-Instead of relying only on the model's existing knowledge, the agent can invoke external tools to retrieve current information and then summarize the results.
-
-### Main capabilities
-
-- Retrieve current news for a topic
-- Retrieve current weather for a location
-- Retrieve recent market information for a stock symbol
-- Use Google ADK to orchestrate the agent workflow
-- Use Gemini as the reasoning and summarization model
-- Expose tools through an MCP server
-- Connect MCP tools to the ADK agent
-- Display results through a Streamlit web interface
-- Handle unavailable data and service errors
-- Generate structured Markdown briefings
+- Generate a daily briefing for a user-provided topic
+- Retrieve latest news articles
+- Retrieve current weather information
+- Retrieve financial information
+- Use MCP tools through Google ADK
+- Validate tool responses using Pydantic models
+- Display the briefing through a Streamlit UI
+- Perform external service health checks
+- Support local execution and Docker-based execution
+- Include unit tests and mocked API tests
+- Maintain structured application logging
 
 ---
 
 ## Architecture
 
 ```text
-                         ┌─────────────────────┐
-                         │    Streamlit UI     │
-                         └──────────┬──────────┘
+                         ┌──────────────────────┐
+                         │      User            │
+                         │  Enters a topic      │
+                         └──────────┬───────────┘
                                     │
                                     ▼
-                         ┌─────────────────────┐
-                         │   Google ADK Runner │
-                         └──────────┬──────────┘
+                         ┌──────────────────────┐
+                         │   Streamlit UI       │
+                         │      app.py          │
+                         └──────────┬───────────┘
                                     │
                                     ▼
-                         ┌─────────────────────┐
-                         │ Daily Briefing Agent│
-                         │   Gemini LLM        │
-                         └──────────┬──────────┘
+                         ┌──────────────────────┐
+                         │  Daily Briefing      │
+                         │  ADK Root Agent      │
+                         └──────────┬───────────┘
                                     │
                                     ▼
-                         ┌─────────────────────┐
-                         │     MCPToolset      │
-                         └──────────┬──────────┘
+                         ┌──────────────────────┐
+                         │     MCP Toolset      │
+                         └──────────┬───────────┘
                                     │
-                                    ▼
-                    ┌──────────────────────────────┐
-                    │     Briefing MCP Server      │
-                    └──────────────┬───────────────┘
-                                   │
-             ┌─────────────────────┼─────────────────────┐
-             ▼                     ▼                     ▼
-      ┌────────────┐       ┌────────────┐       ┌────────────┐
-      │ News Tool  │       │Weather Tool│       │Finance Tool│
-      └─────┬──────┘       └─────┬──────┘       └─────┬──────┘
-            │                    │                    │
-            ▼                    ▼                    ▼
-       News RSS             Weather API          Market API
-            │                    │                    │
-            └────────────────────┼────────────────────┘
-                                 ▼
-                         Tool results returned
-                                 │
-                                 ▼
-                         Gemini summarizes
-                                 │
-                                 ▼
-                         Final daily briefing
+                 ┌──────────────────┼──────────────────┐
+                 ▼                  ▼                  ▼
+        ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+        │  News Service  │ │ Weather Service│ │ Finance Service│
+        │ Google News RSS│ │   wttr.in      │ │ Yahoo Finance  │
+        └────────────────┘ └────────────────┘ └────────────────┘
 ```
 
 ---
-## Architecture
 
-flowchart TD
-    U[User] --> S[Streamlit UI]
-    S --> A[Google ADK Root Agent]
-    A --> M[MCP Toolset]
-    M --> MCP[MCP Server]
-
-    MCP --> N[News Tool]
-    MCP --> W[Weather Tool]
-    MCP --> F[Finance Tool]
-
-    N --> NR[Google News RSS]
-    W --> WR[wttr.in API]
-    F --> FR[Yahoo Finance API]
-
-    N --> P1[NewsResponse]
-    W --> P2[WeatherResponse]
-    F --> P3[FinanceResponse]
-
-    P1 --> A
-    P2 --> A
-    P3 --> A
-
-    A --> R[Structured Daily Briefing]
-    R --> S
-    
 ## Technology Stack
 
-- Python
-- Google Agent Development Kit
-- Gemini
-- MCP
-- MCP 2.x
-- Pydantic
-- Streamlit
-- HTTPX
-- python-dotenv
-- Google News RSS
-- wttr.in weather service
-- Yahoo Finance chart endpoint
+- **Python 3.11**
+- **Google Agent Development Kit**
+- **Model Context Protocol**
+- **MCP Toolset**
+- **Pydantic**
+- **Streamlit**
+- **HTTPX**
+- **Uvicorn**
+- **Google Gemini**
+- **Pytest**
+- **Docker**
+- **Git and GitHub**
 
 ---
 
@@ -129,465 +84,435 @@ AIDailyBriefingAgent/
 │   ├── __init__.py
 │   ├── agent.py
 │   ├── config.py
-│   ├── news_tool.py
-│   ├── weather_tool.py
-│   └── finance_tool.py
+│   ├── health_check.py
+│   ├── logging_config.py
+│   ├── models.py
+│   ├── tools/
+│   │   ├── __init__.py
+│   │   ├── news_tool.py
+│   │   ├── weather_tool.py
+│   │   └── finance_tool.py
+│   │
+│   └── ...
 │
 ├── mcp_servers/
 │   ├── __init__.py
-│   └── briefing_mcp_server.py
+│   ├── briefing_mcp_server.py
+│   └── ...
 │
-├── data/
 ├── tests/
+│   ├── test_news_tool.py
+│   ├── test_weather_tool.py
+│   ├── test_finance_tool.py
+│   ├── test_models.py
+│   └── ...
+│
+├── docs/
+│   └── architecture.md
 │
 ├── app.py
-├── .env
-├── .env.example
+├── requirements.txt
+├── Dockerfile
+├── .dockerignore
 ├── .gitignore
+├── .env.example
 ├── README.md
-└── requirements.txt
+└── .env
 ```
+
+> The `.env` file contains local secrets and must not be committed to GitHub.
 
 ---
 
-## Component Description
+## Prerequisites
 
-### `briefing_agent/agent.py`
+Install the following before running the project locally:
 
-Defines the root Google ADK agent.
-
-Responsibilities:
-
-- Configure the Gemini model
-- Define the agent instructions
-- Connect the MCP toolset
-- Decide when tools should be called
-- Summarize tool results
-- Generate the final briefing
-
-### `briefing_agent/config.py`
-
-Loads environment variables from the `.env` file.
-
-### `briefing_agent/news_tool.py`
-
-Retrieves recent news headlines using Google News RSS.
-
-The tool returns:
-
-- Headline
-- Source
-- Publication date
-- Article link
-
-### `briefing_agent/weather_tool.py`
-
-Retrieves current weather information using wttr.in.
-
-The tool returns:
-
-- Weather condition
-- Temperature
-- Feels-like temperature
-- Humidity
-- Wind speed
-
-### `briefing_agent/finance_tool.py`
-
-Retrieves recent market information using a Yahoo Finance chart endpoint.
-
-The tool returns:
-
-- Latest closing price
-- Change from previous close
-- Opening price
-- Day high
-- Day low
-- Trading volume
-
-### `mcp_servers/briefing_mcp_server.py`
-
-Exposes the News, Weather, and Finance functions as MCP tools.
-
-Available MCP tools:
-
-```text
-news(topic)
-weather(location)
-finance(symbol)
-```
-
-### `app.py`
-
-Provides the Streamlit user interface.
-
-The UI allows the user to enter:
-
-- News topic
-- Weather location
-- Stock symbol
-
-It then invokes the ADK agent and displays the generated briefing.
+- Python 3.11 or later
+- Git
+- Visual Studio Code or another IDE
+- Google Gemini API key
+- Docker Desktop, if using Docker
 
 ---
 
-## Agent Workflow
+## Environment Configuration
 
-```text
-User enters a request
-        ↓
-Streamlit creates a prompt
-        ↓
-ADK Runner invokes the root agent
-        ↓
-Gemini interprets the request
-        ↓
-Gemini selects the required MCP tools
-        ↓
-MCPToolset communicates with the MCP server
-        ↓
-MCP server invokes the corresponding Python functions
-        ↓
-External services return data
-        ↓
-Tool results are passed back to Gemini
-        ↓
-Gemini summarizes and structures the results
-        ↓
-Streamlit displays the final briefing
+Create a `.env` file in the project root:
+
+```env
+GOOGLE_API_KEY=your_google_gemini_api_key
 ```
+
+You can create a `.env.example` file for reference:
+
+```env
+GOOGLE_API_KEY=your_google_gemini_api_key
+```
+
+Never commit the actual `.env` file to GitHub.
 
 ---
 
-## Setup
+## Local Setup
 
 ### 1. Clone the repository
 
-```powershell
+```bash
 git clone https://github.com/SravyaSpandana/ai-daily-briefing-agent.git
 ```
 
 Move into the project directory:
 
-```powershell
+```bash
 cd ai-daily-briefing-agent
 ```
 
----
-
 ### 2. Create a virtual environment
+
+On Windows:
 
 ```powershell
 python -m venv .venv
 ```
 
-Activate the virtual environment on Windows PowerShell:
+Activate it:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks activation, run:
+On macOS or Linux:
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```bash
+source .venv/bin/activate
 ```
-
-Then activate again:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
----
 
 ### 3. Install dependencies
 
-```powershell
-python -m pip install --upgrade pip
-```
-
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
----
+### 4. Configure environment variables
 
-### 4. Configure the Google API key
-
-Create a `.env` file in the project root:
+Create a `.env` file and add:
 
 ```env
-GOOGLE_API_KEY=your_google_api_key_here
-```
-
-The `.env` file is ignored by Git and must never be committed to GitHub.
-
-The `.env.example` file contains only a placeholder:
-
-```env
-GOOGLE_API_KEY=your_google_api_key_here
+GOOGLE_API_KEY=your_google_gemini_api_key
 ```
 
 ---
 
-## Requirements
+## Running the Application Locally
 
-The current dependencies are:
+Start the Streamlit application:
 
-```text
-google-adk
-mcp
-pydantic
-python-dotenv
-streamlit
-httpx
-```
-
-The project currently uses:
-
-```text
-Google ADK 2.9.1
-MCP 2.2.0
-```
-
----
-
-## Running the Application
-
-### Run the Streamlit application
-
-From the project root:
-
-```powershell
+```bash
 streamlit run app.py
 ```
 
-The application will normally be available at:
+Open the application in your browser:
 
 ```text
 http://localhost:8501
 ```
 
-The Streamlit interface allows you to enter:
-
-- A news topic, such as `artificial intelligence`
-- A weather location, such as `Hyderabad`
-- A stock symbol, such as `JPM`
-
-Click **Generate Briefing** to invoke the agent.
+Enter a topic and generate the daily briefing.
 
 ---
 
-### Run ADK Web
+## Running the MCP Server
 
-To test the agent through the Google ADK development interface:
+The MCP server can be started using:
 
-```powershell
-adk web
-```
-
-Open the URL displayed in the terminal.
-
-Use prompts such as:
-
-```text
-Give me current news about artificial intelligence.
-```
-
-```text
-What is the current weather in Hyderabad?
-```
-
-```text
-Give me a recent market snapshot for JPM.
-```
-
-```text
-Prepare a daily briefing with AI news, Hyderabad weather, and JPM market information.
-```
-
----
-
-### Run the MCP server manually
-
-The MCP server can be started manually with:
-
-```powershell
+```bash
 python -m mcp_servers.briefing_mcp_server
 ```
 
-The server uses standard input/output transport and waits for an MCP client.
+The server exposes tools used by the ADK agent, including:
 
-Normally, the server is started automatically by the ADK `MCPToolset`, so manual execution is not required when running the Streamlit application or ADK Web.
+- News retrieval
+- Weather retrieval
+- Finance retrieval
+
+The ADK agent connects to the MCP server through the MCP toolset.
 
 ---
 
-## Example Prompt
+## Running Tests
+
+Run all tests using:
+
+```bash
+pytest
+```
+
+For more detailed output:
+
+```bash
+pytest -v
+```
+
+The test suite includes:
+
+- Unit tests for news, weather, and finance tools
+- Pydantic model validation tests
+- Mocked external API tests
+- Error-handling tests
+
+---
+
+## Service Health Checks
+
+The application includes health checks for the external services used by the agent.
+
+The health checks verify the availability of:
+
+- News service
+- Weather service
+- Finance service
+
+You can test the health-check module directly:
+
+```bash
+python -c "from briefing_agent.health_check import get_service_health; print(get_service_health())"
+```
+
+The Streamlit application also provides a **Service Health** option to check the external services.
+
+---
+
+## Docker Setup
+
+Docker packages the Python runtime, project dependencies, application code, and MCP server into a portable image.
+
+This allows the application to run consistently across different environments.
+
+### Dockerfile
+
+The project contains a `Dockerfile` in the root directory.
+
+The Docker image includes:
+
+- Python 3.11
+- Required Python dependencies
+- Application source code
+- MCP server code
+- Streamlit startup configuration
+
+### Build the Docker image
+
+From the project root, run:
+
+```bash
+docker build -t ai-daily-briefing-agent .
+```
+
+Explanation:
 
 ```text
-Prepare my daily briefing.
-
-Include:
-- Current artificial intelligence news
-- Current weather in Hyderabad
-- Recent market information for JPM
-
-Keep it concise and use the structured format.
+docker build       → Builds a Docker image
+-t                 → Assigns a name/tag to the image
+ai-daily-briefing-agent → Image name
+.                  → Uses the current directory as the build context
 ```
 
----
+### Verify the image
 
-## Expected Response Format
-
-```markdown
-## Daily Briefing
-
-### News Highlights
-
-- Important current news headline
-- Source and article link
-
-### Weather
-
-- Location: Hyderabad
-- Condition: ...
-- Temperature: ...
-- Feels like: ...
-- Humidity: ...
-- Wind speed: ...
-
-### Market Snapshot
-
-- Symbol: JPM
-- Latest close: ...
-- Change from previous close: ...
-- Open: ...
-- Day high: ...
-- Day low: ...
-- Volume: ...
-
-This information is not financial advice.
-
-### Important Notes
-
-- Any unavailable data or service limitations
-
-### Sources
-
-- Source links returned by the tools
+```bash
+docker images
 ```
 
----
-
-## MCP Integration
-
-The project uses MCP to expose external capabilities in a standardized way.
-
-The MCP server defines three tools:
-
-```python
-news(topic: str)
-weather(location: str)
-finance(symbol: str)
-```
-
-The Google ADK agent connects to the MCP server using `MCPToolset`.
-
-Conceptually:
+You should see:
 
 ```text
-ADK Agent
-    ↓
-MCPToolset
-    ↓
-MCP Server
-    ↓
-MCP Tool
-    ↓
-External Data Service
+ai-daily-briefing-agent
 ```
 
-This approach separates:
+### Run the Docker container
 
-- Agent reasoning
-- Tool implementation
-- MCP communication
-- User interface
+```bash
+docker run --rm -p 8501:8501 --env-file .env ai-daily-briefing-agent
+```
+
+Explanation:
+
+```text
+docker run       → Starts a container from the image
+--rm             → Removes the container after it stops
+-p 8501:8501     → Maps local port 8501 to container port 8501
+--env-file .env  → Loads environment variables from the local .env file
+ai-daily-briefing-agent → Image to run
+```
+
+Open the application:
+
+```text
+http://localhost:8501
+```
+
+### Run on a different local port
+
+If port `8501` is already in use:
+
+```bash
+docker run --rm -p 8502:8501 --env-file .env ai-daily-briefing-agent
+```
+
+Then open:
+
+```text
+http://localhost:8502
+```
+
+### Stop the container
+
+Press:
+
+```text
+Ctrl + C
+```
+
+The `--rm` option automatically removes the stopped container. The Docker image remains available.
+
+---
+
+## Docker Image and Container Concept
+
+```text
+Dockerfile
+    ↓ docker build
+Docker Image
+    ↓ docker run
+Docker Container
+    ↓
+Running Streamlit Application
+```
+
+The Dockerfile is the build recipe.
+
+The Docker image is the packaged application.
+
+The Docker container is the running instance of that image.
+
+---
+
+## External Services
+
+The application uses external services to retrieve information:
+
+| Service | Purpose |
+|---|---|
+| Google News RSS | News articles |
+| wttr.in | Weather information |
+| Yahoo Finance chart API | Financial information |
+| Google Gemini | AI-generated briefing |
+
+External service availability, rate limits, and response formats may change.
 
 ---
 
 ## Error Handling
 
-The tools handle common failures, including:
+The application includes handling for common external-service issues, such as:
 
-- Missing input
-- HTTP request failures
-- Invalid service responses
+- Request failures
+- Timeout errors
+- Invalid responses
 - Missing data
-- Unexpected exceptions
+- Service unavailability
+- API quota errors
 
-The agent is instructed to:
-
-- Avoid inventing current information
-- Clearly mention unavailable data
-- Distinguish retrieved information from general knowledge
-- Avoid presenting market information as financial advice
+The application also uses logging to help troubleshoot failures.
 
 ---
 
-## Current Status
+## Logging
 
-- [x] Project initialized
-- [x] Python virtual environment configured
-- [x] Dependencies installed
-- [x] Environment configuration added
-- [x] Gemini-based ADK root agent created
-- [x] News tool added
-- [x] Weather tool added
-- [x] Finance tool added
-- [x] MCP server created
-- [x] MCP 2.x compatibility updated
-- [x] MCP server connected to Google ADK
-- [x] News tool tested through ADK
-- [x] Weather tool tested through ADK
-- [x] Finance tool tested through ADK
-- [x] Streamlit UI created
-- [x] End-to-end briefing tested
-- [x] Structured Markdown response format added
+Logging is configured through:
+
+```text
+briefing_agent/logging_config.py
+```
+
+Logs help track:
+
+- Tool execution
+- External API calls
+- Agent workflow activity
+- Errors and exceptions
+- Service health-check results
+
+---
+
+## Security Considerations
+
+- API keys are loaded through environment variables
+- `.env` is excluded from Git
+- Secrets are not hardcoded in source code
+- Docker builds do not include the local `.env` file
+- API keys should be passed at runtime during container execution
 
 ---
 
 ## Future Enhancements
 
-- Strict structured output using Pydantic models
-- Separate specialized News, Weather, and Finance agents
-- Agent-to-agent communication using A2A
-- Briefing history and persistence
-- User preferences and personalized briefings
-- Scheduled daily briefing generation
-- Email or notification delivery
-- RAG over saved news articles
-- Improved source extraction and citations
-- Better finance data provider integration
-- Unit and integration tests
-- Docker support
-- Cloud deployment
-- Authentication and multi-user support
+Potential future improvements include:
+
+- Deploy the Docker image to AWS ECS
+- Push the image to Amazon ECR
+- Add GitHub Actions CI/CD
+- Add automated Docker image builds
+- Add richer Streamlit visualizations
+- Add persistent storage
+- Add authentication
+- Add more MCP tools
+- Add additional news and financial data sources
+- Add monitoring with CloudWatch, Prometheus, or Grafana
+- Add deployment through Spinnaker
+- Support multi-agent workflows for more briefing categories
 
 ---
 
-## Security Notes
+## Git Workflow
 
-- Never commit the `.env` file.
-- Never expose the Google API key in source code.
-- Do not upload API keys, credentials, or tokens to GitHub.
-- Use `.env.example` to document required environment variables.
-- Treat external data as untrusted input.
-- Do not treat market data as financial advice.
+Check the current Git status:
+
+```bash
+git status
+```
+
+Stage changes:
+
+```bash
+git add .
+```
+
+Commit changes:
+
+```bash
+git commit -m "Add Docker support and documentation"
+```
+
+Push changes to GitHub:
+
+```bash
+git push
+```
 
 ---
 
-## License
+## GitHub Repository
 
-This project is intended for learning, experimentation, and portfolio development.
+Repository:
+
+https://github.com/SravyaSpandana/ai-daily-briefing-agent
+
+---
+
+## Author
+
+**Sravya V**
+
+Software Engineer | Java Full Stack | Cloud | Agentic AI
