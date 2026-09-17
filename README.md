@@ -3,7 +3,7 @@
 
 An AI-powered daily briefing application that collects information from multiple external services and generates a concise, structured briefing for a user-provided topic.
 
-The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context Protocol (MCP)**, tool integration, Pydantic data validation, logging, testing, Streamlit, and Docker containerization.
+The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context Protocol (MCP)**, tool integration, Pydantic data validation, logging, testing, Streamlit, Docker containerization, GitHub Actions CI, and GitHub Container Registry.
 
 ---
 
@@ -17,9 +17,12 @@ The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context
 - Validate tool responses using Pydantic models
 - Display the briefing through a Streamlit UI
 - Perform external service health checks
-- Support local execution and Docker-based execution
+- Support local Python execution
+- Support Docker-based execution
+- Publish Docker images to GitHub Container Registry
 - Include unit tests and mocked API tests
 - Maintain structured application logging
+- Run automated CI through GitHub Actions
 
 ---
 
@@ -27,20 +30,20 @@ The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context
 
 ```text
                          ┌──────────────────────┐
-                         │      User            │
-                         │  Enters a topic      │
+                         │        User          │
+                         │   Enters a topic     │
                          └──────────┬───────────┘
                                     │
                                     ▼
                          ┌──────────────────────┐
-                         │   Streamlit UI       │
-                         │      app.py          │
+                         │    Streamlit UI      │
+                         │       app.py         │
                          └──────────┬───────────┘
                                     │
                                     ▼
                          ┌──────────────────────┐
-                         │  Daily Briefing      │
-                         │  ADK Root Agent      │
+                         │   Daily Briefing     │
+                         │     ADK Agent        │
                          └──────────┬───────────┘
                                     │
                                     ▼
@@ -56,6 +59,24 @@ The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context
         └────────────────┘ └────────────────┘ └────────────────┘
 ```
 
+### Application Workflow
+
+```text
+User enters topic
+       ↓
+Streamlit sends request to ADK agent
+       ↓
+ADK agent invokes MCP tools
+       ↓
+News, weather, and finance data are retrieved
+       ↓
+Responses are validated using Pydantic models
+       ↓
+Gemini generates the daily briefing
+       ↓
+Structured briefing is displayed in Streamlit
+```
+
 ---
 
 ## Technology Stack
@@ -64,13 +85,15 @@ The project demonstrates **Google Agent Development Kit (ADK)**, **Model Context
 - **Google Agent Development Kit**
 - **Model Context Protocol**
 - **MCP Toolset**
+- **Google Gemini**
 - **Pydantic**
 - **Streamlit**
 - **HTTPX**
 - **Uvicorn**
-- **Google Gemini**
 - **Pytest**
 - **Docker**
+- **GitHub Actions**
+- **GitHub Container Registry**
 - **Git and GitHub**
 
 ---
@@ -87,18 +110,15 @@ AIDailyBriefingAgent/
 │   ├── health_check.py
 │   ├── logging_config.py
 │   ├── models.py
-│   ├── tools/
-│   │   ├── __init__.py
-│   │   ├── news_tool.py
-│   │   ├── weather_tool.py
-│   │   └── finance_tool.py
-│   │
-│   └── ...
+│   └── tools/
+│       ├── __init__.py
+│       ├── news_tool.py
+│       ├── weather_tool.py
+│       └── finance_tool.py
 │
 ├── mcp_servers/
 │   ├── __init__.py
-│   ├── briefing_mcp_server.py
-│   └── ...
+│   └── briefing_mcp_server.py
 │
 ├── tests/
 │   ├── test_news_tool.py
@@ -110,17 +130,20 @@ AIDailyBriefingAgent/
 ├── docs/
 │   └── architecture.md
 │
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
 ├── app.py
 ├── requirements.txt
 ├── Dockerfile
 ├── .dockerignore
 ├── .gitignore
 ├── .env.example
-├── README.md
-└── .env
+└── README.md
 ```
 
-> The `.env` file contains local secrets and must not be committed to GitHub.
+> The actual `.env` file is intentionally excluded from GitHub because it contains secrets.
 
 ---
 
@@ -248,7 +271,7 @@ Run all tests using:
 pytest
 ```
 
-For more detailed output:
+For detailed output:
 
 ```bash
 pytest -v
@@ -260,6 +283,18 @@ The test suite includes:
 - Pydantic model validation tests
 - Mocked external API tests
 - Error-handling tests
+- Input validation tests
+
+### Running Tests in CI Mode
+
+The project supports running tests without a production API key:
+
+```powershell
+$env:APP_ENV="test"
+pytest -v
+```
+
+GitHub Actions sets `APP_ENV=test` automatically.
 
 ---
 
@@ -289,19 +324,25 @@ Docker packages the Python runtime, project dependencies, application code, and 
 
 This allows the application to run consistently across different environments.
 
-### Dockerfile
+### Docker Image and Container
 
-The project contains a `Dockerfile` in the root directory.
+```text
+Dockerfile
+    ↓ docker build
+Docker Image
+    ↓ docker run
+Docker Container
+    ↓
+Running Streamlit Application
+```
 
-The Docker image includes:
+- **Dockerfile**: Build instructions
+- **Docker image**: Packaged application
+- **Docker container**: Running instance of the image
 
-- Python 3.11
-- Required Python dependencies
-- Application source code
-- MCP server code
-- Streamlit startup configuration
+---
 
-### Build the Docker image
+## Build the Docker Image Locally
 
 From the project root, run:
 
@@ -312,25 +353,37 @@ docker build -t ai-daily-briefing-agent .
 Explanation:
 
 ```text
-docker build       → Builds a Docker image
--t                 → Assigns a name/tag to the image
-ai-daily-briefing-agent → Image name
-.                  → Uses the current directory as the build context
+docker build
+    → Builds a Docker image
+
+-t
+    → Assigns a name and tag
+
+ai-daily-briefing-agent
+    → Image name
+
+.
+    → Uses the current directory as the build context
 ```
 
-### Verify the image
+### Verify the Local Image
 
 ```bash
 docker images
 ```
 
-You should see:
+You should see an image similar to:
 
 ```text
-ai-daily-briefing-agent
+REPOSITORY                  TAG       IMAGE ID       CREATED          SIZE
+ai-daily-briefing-agent     latest    xxxxxxxxxxxx   A few seconds ago ...
 ```
 
-### Run the Docker container
+---
+
+## Run the Docker Container Locally
+
+Run:
 
 ```bash
 docker run --rm -p 8501:8501 --env-file .env ai-daily-briefing-agent
@@ -339,11 +392,20 @@ docker run --rm -p 8501:8501 --env-file .env ai-daily-briefing-agent
 Explanation:
 
 ```text
-docker run       → Starts a container from the image
---rm             → Removes the container after it stops
--p 8501:8501     → Maps local port 8501 to container port 8501
---env-file .env  → Loads environment variables from the local .env file
-ai-daily-briefing-agent → Image to run
+docker run
+    → Starts a container from the image
+
+--rm
+    → Removes the container after it stops
+
+-p 8501:8501
+    → Maps local port 8501 to container port 8501
+
+--env-file .env
+    → Loads environment variables from the local .env file
+
+ai-daily-briefing-agent
+    → Image to run
 ```
 
 Open the application:
@@ -352,7 +414,7 @@ Open the application:
 http://localhost:8501
 ```
 
-### Run on a different local port
+### Run on a Different Local Port
 
 If port `8501` is already in use:
 
@@ -366,7 +428,7 @@ Then open:
 http://localhost:8502
 ```
 
-### Stop the container
+### Stop the Container
 
 Press:
 
@@ -374,27 +436,194 @@ Press:
 Ctrl + C
 ```
 
-The `--rm` option automatically removes the stopped container. The Docker image remains available.
+The `--rm` option automatically removes the stopped container. The Docker image remains available locally.
 
 ---
 
-## Docker Image and Container Concept
+## GitHub Actions CI Pipeline
+
+The project uses GitHub Actions to automatically:
+
+1. Check out the source code
+2. Set up Python
+3. Install dependencies
+4. Run tests
+5. Build the Docker image
+6. Publish the Docker image to GitHub Container Registry
+
+### CI Workflow
 
 ```text
-Dockerfile
-    ↓ docker build
-Docker Image
-    ↓ docker run
-Docker Container
+GitHub push
     ↓
-Running Streamlit Application
+GitHub Actions triggered
+    ↓
+Checkout source code
+    ↓
+Install Python dependencies
+    ↓
+Run pytest
+    ↓
+Build Docker image
+    ↓
+Login to GHCR
+    ↓
+Push Docker image to GHCR
 ```
 
-The Dockerfile is the build recipe.
+The workflow file is located at:
 
-The Docker image is the packaged application.
+```text
+.github/workflows/ci.yml
+```
 
-The Docker container is the running instance of that image.
+---
+
+## GitHub Container Registry
+
+The Docker image is published to **GitHub Container Registry (GHCR)**.
+
+### Published Image
+
+```text
+ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+A commit-specific image tag is also published for traceability:
+
+```text
+ghcr.io/sravyaspandana/ai-daily-briefing-agent:<commit-sha>
+```
+
+The `latest` tag points to the most recently published image.
+
+The commit SHA tag identifies the exact source-code version used to build that image.
+
+---
+
+## Pull the Image from GHCR
+
+Because the package is public, you can pull it without logging in:
+
+```bash
+docker pull ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+Verify that the image was downloaded:
+
+```bash
+docker images
+```
+
+You should see:
+
+```text
+ghcr.io/sravyaspandana/ai-daily-briefing-agent
+```
+
+---
+
+## Run the GHCR Image Locally
+
+Run the image pulled from GitHub Container Registry:
+
+```bash
+docker run --rm -p 8501:8501 --env-file .env ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+Open the application:
+
+```text
+http://localhost:8501
+```
+
+This verifies that the application can run from the **published registry image**, rather than only from a locally built image.
+
+---
+
+## GHCR Image Commands Summary
+
+### Pull the latest image
+
+```bash
+docker pull ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+### Run the latest image
+
+```bash
+docker run --rm -p 8501:8501 --env-file .env ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+### List local images
+
+```bash
+docker images
+```
+
+### List running containers
+
+```bash
+docker ps
+```
+
+### List all containers
+
+```bash
+docker ps -a
+```
+
+### Stop a container
+
+```bash
+docker stop <container-id>
+```
+
+### Remove a local image
+
+```bash
+docker rmi ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
+
+---
+
+## GHCR Publishing Authentication
+
+GitHub Actions uses the built-in `GITHUB_TOKEN` to authenticate with GHCR.
+
+The workflow includes:
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+```
+
+The login step is:
+
+```yaml
+- name: Log in to GitHub Container Registry
+  uses: docker/login-action@v3
+  with:
+    registry: ghcr.io
+    username: ${{ github.actor }}
+    password: ${{ secrets.GITHUB_TOKEN }}
+```
+
+The image is built and pushed using:
+
+```yaml
+- name: Build and push Docker image
+  uses: docker/build-push-action@v6
+  with:
+    context: .
+    push: true
+    tags: |
+      ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+      ghcr.io/sravyaspandana/ai-daily-briefing-agent:${{ github.sha }}
+```
+
+No personal access token is required for this workflow because GitHub provides the repository’s `GITHUB_TOKEN`.
 
 ---
 
@@ -423,6 +652,7 @@ The application includes handling for common external-service issues, such as:
 - Missing data
 - Service unavailability
 - API quota errors
+- Invalid user input
 
 The application also uses logging to help troubleshoot failures.
 
@@ -452,7 +682,28 @@ Logs help track:
 - `.env` is excluded from Git
 - Secrets are not hardcoded in source code
 - Docker builds do not include the local `.env` file
-- API keys should be passed at runtime during container execution
+- API keys are passed at runtime during container execution
+- GitHub Actions tests do not require the production API key
+- GHCR publishing uses GitHub’s built-in token
+
+---
+
+## Current Version
+
+**Version: 1.0.0**
+
+The project currently supports:
+
+- Streamlit-based user interface
+- Google ADK agent
+- MCP tool integration
+- News, weather, and finance tools
+- Pydantic response validation
+- Service health checks
+- Structured logging
+- Docker containerization
+- GitHub Actions CI pipeline
+- Docker image publishing to GHCR
 
 ---
 
@@ -462,8 +713,9 @@ Potential future improvements include:
 
 - Deploy the Docker image to AWS ECS
 - Push the image to Amazon ECR
-- Add GitHub Actions CI/CD
-- Add automated Docker image builds
+- Add ECS Fargate deployment
+- Add Application Load Balancer
+- Add automated release tagging
 - Add richer Streamlit visualizations
 - Add persistent storage
 - Add authentication
@@ -492,7 +744,7 @@ git add .
 Commit changes:
 
 ```bash
-git commit -m "Add Docker support and documentation"
+git commit -m "Update README with GHCR documentation"
 ```
 
 Push changes to GitHub:
@@ -508,6 +760,14 @@ git push
 Repository:
 
 https://github.com/SravyaSpandana/ai-daily-briefing-agent
+
+## GitHub Container Registry
+
+Published image:
+
+```text
+ghcr.io/sravyaspandana/ai-daily-briefing-agent:latest
+```
 
 ---
 
