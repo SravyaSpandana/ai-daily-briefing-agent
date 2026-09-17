@@ -10,9 +10,14 @@ on:
       - main
       - master
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
     env:
       APP_ENV: test
 
@@ -32,8 +37,7 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: |
-          pytest -v
+        run: pytest -v
 
   docker-build:
     runs-on: ubuntu-latest
