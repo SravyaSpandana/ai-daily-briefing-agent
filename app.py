@@ -1,5 +1,5 @@
 import asyncio
-
+from briefing_agent.health_check import get_service_health
 import streamlit as st
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -55,7 +55,19 @@ symbol = st.text_input(
     "Stock symbol",
     value="JPM",
 )
+st.subheader("Service Health")
 
+if st.button("Check Services"):
+    with st.spinner("Checking external services..."):
+        health = get_service_health()
+
+    for service, is_available in health.items():
+        display_name = service.replace("_", " ").title()
+
+        if is_available:
+            st.success(f"{display_name}: Available")
+        else:
+            st.error(f"{display_name}: Unavailable")
 
 if st.button("Generate Briefing", type="primary"):
 
