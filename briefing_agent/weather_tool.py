@@ -1,10 +1,10 @@
 import json
-
+import logging
 import httpx
 
 from briefing_agent.models import WeatherResponse
 
-
+logger = logging.getLogger(__name__)
 def get_weather(location: str) -> str:
     """
     Retrieve current weather information for a location.
@@ -15,7 +15,7 @@ def get_weather(location: str) -> str:
     Returns:
         A JSON string containing current weather information.
     """
-
+    logger.info("Fetching weather for location: %s", location)
     if not location or not location.strip():
         return json.dumps({
             "location": location,
@@ -47,6 +47,7 @@ def get_weather(location: str) -> str:
         wind_speed = current.get("windspeedKmph")
 
         weather_description = current.get("weatherDesc", [{}])[0]
+        logger.info("Weather API request succeeded for location: %s", location)
         description = weather_description.get(
             "value",
             "Condition unavailable",
@@ -80,18 +81,30 @@ def get_weather(location: str) -> str:
         return result.model_dump_json()
 
     except httpx.HTTPError as exc:
+        logger.exception(
+        "Weather API request failed for location: %s",
+        location,
+            )
         return json.dumps({
             "location": location,
             "error": f"Weather service request failed: {str(exc)}",
         })
 
     except (KeyError, IndexError, ValueError, TypeError):
+        logger.exception(
+        "Unable to parse weather response for location: %s",
+        location,
+    )
         return json.dumps({
             "location": location,
             "error": "Unable to read the weather service response.",
         })
 
     except Exception as exc:
+        logger.exception(
+        "Unexpected error while retrieving weather for location: %s",
+        location,
+    )
         return json.dumps({
             "location": location,
             "error": (

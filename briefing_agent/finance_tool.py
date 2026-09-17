@@ -1,11 +1,12 @@
 import json
-
+import logging
 import httpx
 
 from briefing_agent.models import FinanceResponse
 
-
+logger = logging.getLogger(__name__)
 def get_finance(symbol: str) -> str:
+    logger.info("Fetching finance data for symbol: %s", symbol)
     """
     Retrieve recent market information for a stock symbol.
 
@@ -42,7 +43,7 @@ def get_finance(symbol: str) -> str:
         data = response.json()
 
         result = data["chart"]["result"]
-
+        logger.info("Finance API request succeeded for symbol: %s", symbol)
         if not result:
             return json.dumps({
                 "symbol": symbol,
@@ -158,18 +159,30 @@ def get_finance(symbol: str) -> str:
         return json.dumps(result_json)
 
     except httpx.HTTPError as exc:
+        logger.exception(
+        "Finance API request failed for symbol: %s",
+        symbol,
+    )
         return json.dumps({
             "symbol": symbol,
             "error": f"Finance service request failed: {str(exc)}",
         })
 
     except (KeyError, IndexError, ValueError, TypeError):
+        logger.exception(
+        "Unable to parse finance response for symbol: %s",
+        symbol,
+    )
         return json.dumps({
             "symbol": symbol,
             "error": "Unable to read the finance service response.",
         })
 
     except Exception as exc:
+        logger.exception(
+        "Unexpected error while retrieving finance data for symbol: %s",
+        symbol,
+    )
         return json.dumps({
             "symbol": symbol,
             "error": (

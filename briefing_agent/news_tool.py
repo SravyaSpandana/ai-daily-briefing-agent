@@ -3,10 +3,11 @@ import xml.etree.ElementTree as ET
 import json
 
 import httpx
+import logging
 
 from briefing_agent.models import NewsArticle, NewsResponse
 
-
+logger = logging.getLogger(__name__)
 def get_news(topic: str) -> str:
     """
     Retrieve recent news headlines for a given topic.
@@ -17,7 +18,7 @@ def get_news(topic: str) -> str:
     Returns:
         A JSON string containing recent news headlines.
     """
-
+    logger.info("Fetching news for topic: %s", topic)
     if not topic or not topic.strip():
         return json.dumps({
             "topic": topic,
@@ -74,6 +75,7 @@ def get_news(topic: str) -> str:
             )
 
             articles.append(article)
+            logger.info("News API request succeeded for topic: %s", topic)
 
         result = NewsResponse(
             topic=topic,
@@ -83,6 +85,7 @@ def get_news(topic: str) -> str:
         return result.model_dump_json()
 
     except httpx.HTTPError as exc:
+        logger.exception("News API request failed for topic: %s", topic)
         return json.dumps({
             "topic": topic,
             "articles": [],
@@ -90,6 +93,7 @@ def get_news(topic: str) -> str:
         })
 
     except ET.ParseError:
+        logger.exception("Unable to parse news response for topic: %s", topic)
         return json.dumps({
             "topic": topic,
             "articles": [],
@@ -97,6 +101,10 @@ def get_news(topic: str) -> str:
         })
 
     except Exception as exc:
+        logger.exception(
+        "Unexpected error while retrieving news for topic: %s",
+        topic,
+    )
         return json.dumps({
             "topic": topic,
             "articles": [],

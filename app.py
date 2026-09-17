@@ -6,12 +6,13 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from briefing_agent.agent import root_agent
+from briefing_agent.logging_config import configure_logging
 
 
 APP_NAME = "daily_briefing_app"
 USER_ID = "streamlit_user"
 
-
+configure_logging()
 st.set_page_config(
     page_title="AI Daily Briefing",
     page_icon="📰",
