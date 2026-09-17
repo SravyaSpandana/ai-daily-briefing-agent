@@ -1,13 +1,13 @@
 from google.adk.agents import Agent
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 from mcp import StdioServerParameters
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 
 from briefing_agent.config import GOOGLE_API_KEY
 
 
 root_agent = Agent(
     name="daily_briefing_agent",
-    model="gemini-2.5-flash",
+    model="gemini-3.5-flash-lite",
     description=(
         "An AI agent that prepares structured daily briefings using "
         "current news, weather, and financial information."
@@ -79,7 +79,7 @@ Formatting rules:
 - If the user asks for only one category, return only the relevant section.
 """,
     tools=[
-        MCPToolset(
+        McpToolset(
             connection_params=StdioServerParameters(
                 command="python",
                 args=[
